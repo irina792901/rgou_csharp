@@ -1,34 +1,54 @@
 ﻿//begin
 Console.Clear();
-Console.CursorVisible = false;
 
 //board
-Console.WriteLine("0 0 -");
-Console.WriteLine();
-Console.WriteLine("■■■■  ■■");
-Console.WriteLine("■■■■■■■■");
-Console.WriteLine("■■■■  ■■");
-Console.WriteLine();
-Console.WriteLine("0 0 +");
+int axis = 3;
+string s = "■"; // square
+string programPiece = "o";
+string playerPiece = "x";
 
-string square = "■";
-string programPiece = "-";
-string playerPiece = "+";
+Console.WriteLine($"0 0 {programPiece}");
+Console.WriteLine();
+Console.WriteLine($"{s}{s}{s}{s}" + "  " + $"{s}{s}");
+Console.WriteLine($"{s}{s}{s}{s}" + $"{s}{s}" + $"{s}{s}");
+Console.WriteLine($"{s}{s}{s}{s}" + "  " + $"{s}{s}");
+Console.WriteLine();
+Console.WriteLine($"0 0 {playerPiece}");
 
 //path
-//int[] programInitialPosition = {4,0};
-int programCurrentPositionIndex = 0;
-int[,] programPath = {{4,0},
-{3,2}, {2,2}, {1,2}, {0,2},
-{0,3}, {1,3}, {2,3}, {3,3}, {4,3}, {5,3}, {6,3}, {7,3},
-{7,2}, {6,2}};
+int[,] programPath =
+{
+{4,0},
+{3, axis - 1}, {2, axis - 1}, {1, axis - 1}, {0, axis - 1},
+{0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
+{7, axis - 1}, {6, axis - 1}
+};
+int programIndex = 0;
 
-//int[] playerInitialPosition = {4, 6};
-int playerCurrentPositionIndex = 0;
-int[,] playerPath = {{4,6},
-{3,4}, {2,4}, {1,4}, {0,4},
-{0,3}, {1,3}, {2,3}, {3,3}, {4,3}, {5,3}, {6,3}, {7,3},
-{7,4}, {6,4}};
+int[,] playerPath = {
+{4,6},
+{3, axis + 1}, {2, axis + 1}, {1, axis + 1},{0, axis + 1},
+{0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
+{7, axis + 1}, {6, axis + 1}
+};
+int playerIndex = 0;
+
+//utility
+void I(int x, int y, string text) // Insert
+{
+    Console.SetCursorPosition(x, y);
+    Console.WriteLine(text);
+}
+
+void IPlayer(string text)
+{
+    I(playerPath[playerIndex, 0], playerPath[playerIndex, 1], text);
+}
+
+void IProgram(string text)
+{
+    I(programPath[programIndex, 0], programPath[programIndex, 1], text);
+}
 
 //rules
 bool gameOver = false;
@@ -38,69 +58,72 @@ bool playerTurn = true;
 int[] dice = {0, 0};
 int moveLength;
 
-int R()
+void CastDice(bool isPlayer)
 {
-    return new Random().Next(1, 3);
-}
-
-void CastDice(bool playerTurn)
-{
-    dice[0] = R();
-    dice[1] = R();
+    dice[0] = new Random().Next(1, 3);
+    dice[1] = new Random().Next(1, 3);
     moveLength = dice[0] + dice[1];
 
-    if(playerTurn)
+    if(isPlayer)
     {
-        Console.SetCursorPosition(0, 6);
+        I(0, 6, $"{dice[0]} {dice[1]}");
     }
     else
     {
-        Console.SetCursorPosition(0, 0);
-    }
-    
-    Console.WriteLine($"{dice[0]} {dice[1]}");
-}
-
-bool CheckGameOver(bool playerTurn)
-{
-    if(playerTurn)
-    {
-        if (playerCurrentPositionIndex + moveLength >= playerPath.GetLength(0)) return true;
-        else return false;
-    }
-    else
-    {
-        if (programCurrentPositionIndex + moveLength >= programPath.GetLength(0)) return true;
-        else return false;
+        I(0, 0, $"{dice[0]} {dice[1]}");
     }
 }
 
-void Move(bool playerTurn)
+void CheckGameOver(bool isPlayer)
 {
-    if (playerTurn)
+    if(isPlayer)
     {
-        Console.SetCursorPosition(playerPath[playerCurrentPositionIndex, 0], playerPath[playerCurrentPositionIndex, 1]);
-        Console.Write(square);
-
-        playerCurrentPositionIndex += moveLength;
-
-        Console.SetCursorPosition(playerPath[playerCurrentPositionIndex, 0], playerPath[playerCurrentPositionIndex, 1]);
-        Console.Write(playerPiece);
+        if (playerIndex + moveLength >= playerPath.GetLength(0)) gameOver = true;
     }
     else
     {
-        Console.SetCursorPosition(programPath[programCurrentPositionIndex, 0], programPath[programCurrentPositionIndex, 1]);
-        Console.Write(square);
+        if (programIndex + moveLength >= programPath.GetLength(0)) gameOver = true;
+    }
+}
 
-        programCurrentPositionIndex += moveLength;
+void TheEnd(bool isPlayer)
+{
+    if (isPlayer)
+    {
+        IPlayer(s);
+        I(0, 8, "ВЫ ВЫИГРАЛИ!");
+    }
+    else
+    {
+        IProgram(s);
+        I(0, 8, "Вы проиграли.");
+    }
+}
 
-        Console.SetCursorPosition(programPath[programCurrentPositionIndex, 0], programPath[programCurrentPositionIndex, 1]);
-        Console.Write(programPiece);
+void Move(bool isPlayer)
+{
+    if (isPlayer)
+    {
+        if (playerIndex != 0) IPlayer(s);
+        else IPlayer(" ");
+
+        playerIndex += moveLength;
+        IPlayer(playerPiece);
+    }
+    else
+    {
+        if (programIndex != 0) IProgram(s);
+        else IProgram(" ");
+
+        programIndex += moveLength;
+        IProgram(programPiece);
     }
 }
 
 while (!gameOver)
 {
+    Console.SetCursorPosition(0, 8);
+
     var key = Console.ReadKey().Key;
 
     if (key == ConsoleKey.Enter)
@@ -108,50 +131,22 @@ while (!gameOver)
         if (playerTurn)
         {
             CastDice(true);
-            gameOver = CheckGameOver(true);
-            if (gameOver)
-            {
-                playerWon = true;
-                break;
-            }
-            else
-            {
-                Move(true);
-            }
+            CheckGameOver(true);
+
+            if (gameOver) TheEnd(true);
+            else Move(true);
         }
         else
         {
             CastDice(false);
-            gameOver = CheckGameOver(false);
-            if (gameOver)
-            {
-                playerWon = false;
-                break;
-            }
-            else
-            {
-                Move(false);
-            }
+            CheckGameOver(false);
+
+            if (gameOver) TheEnd(false);
+            else Move(false);
         }
 
         playerTurn = !playerTurn;
     }
 }
 
-if (playerWon)
-{
-    Console.SetCursorPosition(playerPath[playerCurrentPositionIndex, 0], playerPath[playerCurrentPositionIndex, 1]);
-    Console.Write(square);
-    Console.SetCursorPosition(0, 8);
-    Console.WriteLine("ВЫ ВЫИГРАЛИ!");
-}
-else
-{
-    Console.SetCursorPosition(programPath[programCurrentPositionIndex, 0], programPath[programCurrentPositionIndex, 1]);
-    Console.Write(square);
-    Console.SetCursorPosition(0, 8);
-    Console.WriteLine("Вы проиграли.");
-}
-
 //end
-Console.CursorVisible = true;
