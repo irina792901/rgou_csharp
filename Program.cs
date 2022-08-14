@@ -1,8 +1,6 @@
-﻿//begin
+﻿//board
 Console.Clear();
 
-//board
-int axis = 3;
 string s = "■"; // square
 string programPiece = "o";
 string playerPiece = "x";
@@ -16,20 +14,23 @@ Console.WriteLine();
 Console.WriteLine($"0 0 {playerPiece}");
 
 //path
+int axis = 3;
+
 int[,] programPath =
 {
-{4,0},
-{3, axis - 1}, {2, axis - 1}, {1, axis - 1}, {0, axis - 1},
-{0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
-{7, axis - 1}, {6, axis - 1}
+    {4,0},
+    {3, axis - 1}, {2, axis - 1}, {1, axis - 1}, {0, axis - 1},
+    {0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
+    {7, axis - 1}, {6, axis - 1}
 };
 int programIndex = 0;
 
-int[,] playerPath = {
-{4,6},
-{3, axis + 1}, {2, axis + 1}, {1, axis + 1},{0, axis + 1},
-{0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
-{7, axis + 1}, {6, axis + 1}
+int[,] playerPath =
+{
+    {4,6},
+    {3, axis + 1}, {2, axis + 1}, {1, axis + 1},{0, axis + 1},
+    {0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
+    {7, axis + 1}, {6, axis + 1}
 };
 int playerIndex = 0;
 
@@ -52,7 +53,6 @@ void IProgram(string text)
 
 //rules
 bool gameOver = false;
-bool playerWon = false;
 bool playerTurn = true;
 
 int[] dice = {0, 0};
@@ -86,20 +86,6 @@ void CheckGameOver(bool isPlayer)
     }
 }
 
-void TheEnd(bool isPlayer)
-{
-    if (isPlayer)
-    {
-        IPlayer(s);
-        I(0, 8, "ВЫ ВЫИГРАЛИ!");
-    }
-    else
-    {
-        IProgram(s);
-        I(0, 8, "Вы проиграли.");
-    }
-}
-
 void Move(bool isPlayer)
 {
     if (isPlayer)
@@ -120,6 +106,49 @@ void Move(bool isPlayer)
     }
 }
 
+void SendBack(bool isPlayer)
+{
+    if (isPlayer)
+    {
+        if (programIndex >= 5 && programIndex <= 12)
+        {
+            if (playerIndex + moveLength == programIndex)
+            {
+                IProgram(s);
+                programIndex = 0;
+                IProgram(programPiece);
+            }
+        }
+    }
+    else
+    {
+        if (playerIndex >= 5 && playerIndex <= 12)
+        {
+            if (programIndex + moveLength == playerIndex)
+            {
+                IPlayer(s);
+                playerIndex = 0;
+                IPlayer(playerPiece);
+            }
+        }
+    }
+}
+
+void GameOver(bool isPlayer)
+{
+    if (isPlayer)
+    {
+        IPlayer(s);
+        I(0, 8, "ВЫ ВЫИГРАЛИ!");
+    }
+    else
+    {
+        IProgram(s);
+        I(0, 8, "Вы проиграли.");
+    }
+}
+
+//go!
 while (!gameOver)
 {
     Console.SetCursorPosition(0, 8);
@@ -132,21 +161,21 @@ while (!gameOver)
         {
             CastDice(true);
             CheckGameOver(true);
+            SendBack(true);
 
-            if (gameOver) TheEnd(true);
-            else Move(true);
+            if (!gameOver) Move(true);
+            else GameOver(true);
         }
         else
         {
             CastDice(false);
             CheckGameOver(false);
+            SendBack(false);
 
-            if (gameOver) TheEnd(false);
-            else Move(false);
+            if (!gameOver) Move(false);
+            else GameOver(false);
         }
 
         playerTurn = !playerTurn;
     }
 }
-
-//end
