@@ -5,20 +5,20 @@ string s = "■"; // square
 string programPiece = "o";
 string playerPiece = "x";
 
-Console.WriteLine($"0 0 {programPiece}");
+Console.WriteLine($"0 0 0 0 {programPiece}");
 Console.WriteLine();
 Console.WriteLine($"{s}{s}{s}{s}" + "  " + $"{s}{s}");
 Console.WriteLine($"{s}{s}{s}{s}" + $"{s}{s}" + $"{s}{s}");
 Console.WriteLine($"{s}{s}{s}{s}" + "  " + $"{s}{s}");
 Console.WriteLine();
-Console.WriteLine($"0 0 {playerPiece}");
+Console.WriteLine($"0 0 0 0 {playerPiece}");
 
 //path
 int axis = 3;
 
 int[,] programPath =
 {
-    {4,0},
+    {8,0},
     {3, axis - 1}, {2, axis - 1}, {1, axis - 1}, {0, axis - 1},
     {0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
     {7, axis - 1}, {6, axis - 1}
@@ -27,7 +27,7 @@ int programIndex = 0;
 
 int[,] playerPath =
 {
-    {4,6},
+    {8,6},
     {3, axis + 1}, {2, axis + 1}, {1, axis + 1},{0, axis + 1},
     {0, axis}, {1, axis}, {2, axis}, {3, axis}, {4, axis}, {5, axis},{6, axis}, {7, axis},
     {7, axis + 1}, {6, axis + 1}
@@ -55,22 +55,47 @@ void IProgram(string text)
 bool gameOver = false;
 bool playerTurn = true;
 
-int[] dice = {0, 0};
-int moveLength;
+int[] dice = {0, 0, 0, 0};
+int moveLength = 0;
 
 void CastDice(bool isPlayer)
 {
-    dice[0] = new Random().Next(1, 3);
-    dice[1] = new Random().Next(1, 3);
-    moveLength = dice[0] + dice[1];
+    dice[0] = new Random().Next(0, 4);
+    dice[1] = new Random().Next(0, 4);
+    dice[2] = new Random().Next(0, 4);
+    dice[3] = new Random().Next(0, 4);
+
+    moveLength = 0;
+    for(int j = 0; j < dice.Length; j++)
+    {
+        if (dice[j] != 0)
+        {
+            dice[j] = 1;
+            moveLength++;
+        }
+    }
 
     if(isPlayer)
     {
-        I(0, 6, $"{dice[0]} {dice[1]}");
+        I(0, 6, $"{dice[0]} {dice[1]} {dice[2]} {dice[3]}");
     }
     else
     {
-        I(0, 0, $"{dice[0]} {dice[1]}");
+        I(0, 0, $"{dice[0]} {dice[1]} {dice[2]} {dice[3]}");
+    }
+}
+
+bool SkipMove(bool isPlayer)
+{
+    if(isPlayer)
+    {
+        if (playerIndex + moveLength > playerPath.GetLength(0)) return true;
+        else return false;
+    }
+    else
+    {
+        if (programIndex + moveLength > programPath.GetLength(0)) return true;
+        else return false;
     }
 }
 
@@ -78,11 +103,11 @@ void CheckGameOver(bool isPlayer)
 {
     if(isPlayer)
     {
-        if (playerIndex + moveLength >= playerPath.GetLength(0)) gameOver = true;
+        if (playerIndex + moveLength == playerPath.GetLength(0)) gameOver = true;
     }
     else
     {
-        if (programIndex + moveLength >= programPath.GetLength(0)) gameOver = true;
+        if (programIndex + moveLength == programPath.GetLength(0)) gameOver = true;
     }
 }
 
@@ -163,8 +188,8 @@ while (!gameOver)
             CheckGameOver(true);
             SendBack(true);
 
-            if (!gameOver) Move(true);
-            else GameOver(true);
+            if (!gameOver && !SkipMove(true)) Move(true);
+            else if (gameOver) GameOver(true);
         }
         else
         {
@@ -172,8 +197,8 @@ while (!gameOver)
             CheckGameOver(false);
             SendBack(false);
 
-            if (!gameOver) Move(false);
-            else GameOver(false);
+            if (!gameOver && !SkipMove(false)) Move(false);
+            else if (gameOver) GameOver(false);
         }
 
         playerTurn = !playerTurn;
