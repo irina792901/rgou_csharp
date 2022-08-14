@@ -1,15 +1,15 @@
 ﻿//board
 Console.Clear();
 
-string s = "■"; // square
+string square = "■";
 string programPiece = "o";
 string playerPiece = "x";
 
 Console.WriteLine($"0 0 0 0 {programPiece}");
 Console.WriteLine();
-Console.WriteLine($"{s}{s}{s}{s}" + "  " + $"{s}{s}");
-Console.WriteLine($"{s}{s}{s}{s}" + $"{s}{s}" + $"{s}{s}");
-Console.WriteLine($"{s}{s}{s}{s}" + "  " + $"{s}{s}");
+Console.WriteLine($"{square}{square}{square}{square}  {square}{square}");
+Console.WriteLine($"{square}{square}{square}{square}{square}{square}{square}{square}");
+Console.WriteLine($"{square}{square}{square}{square}  {square}{square}");
 Console.WriteLine();
 Console.WriteLine($"0 0 0 0 {playerPiece}");
 
@@ -34,24 +34,35 @@ int[,] playerPath =
 };
 int playerIndex = 0;
 
+int[] extraRollSquare = {4, 8, 14};
+int safeSquare = 8;
+
 //utility
-void I(int x, int y, string text) // Insert
+void Ins(int x, int y, string text)
 {
     Console.SetCursorPosition(x, y);
     Console.WriteLine(text);
 }
 
-void IPlayer(string text)
+void InsPlayer(string text)
 {
-    I(playerPath[playerIndex, 0], playerPath[playerIndex, 1], text);
+    Ins(playerPath[playerIndex, 0], playerPath[playerIndex, 1], text);
 }
 
-void IProgram(string text)
+void InsProgram(string text)
 {
-    I(programPath[programIndex, 0], programPath[programIndex, 1], text);
+    Ins(programPath[programIndex, 0], programPath[programIndex, 1], text);
+}
+
+void ClearLine(int y)
+{
+    Console.SetCursorPosition(0, y);
+    Console.Write(new string(' ', Console.BufferWidth));
+    Console.SetCursorPosition(0, y);
 }
 
 //rules
+string msg = string.Empty;
 bool gameOver = false;
 bool playerTurn = true;
 
@@ -66,36 +77,22 @@ void CastDice(bool isPlayer)
     dice[3] = new Random().Next(0, 4);
 
     moveLength = 0;
-    for(int j = 0; j < dice.Length; j++)
+    for(int i = 0; i < dice.Length; i++)
     {
-        if (dice[j] != 0)
+        if (dice[i] != 0)
         {
-            dice[j] = 1;
+            dice[i] = 1;
             moveLength++;
         }
     }
 
     if(isPlayer)
     {
-        I(0, 6, $"{dice[0]} {dice[1]} {dice[2]} {dice[3]}");
+        Ins(0, 6, $"{dice[0]} {dice[1]} {dice[2]} {dice[3]}");
     }
     else
     {
-        I(0, 0, $"{dice[0]} {dice[1]} {dice[2]} {dice[3]}");
-    }
-}
-
-bool SkipMove(bool isPlayer)
-{
-    if(isPlayer)
-    {
-        if (playerIndex + moveLength > playerPath.GetLength(0)) return true;
-        else return false;
-    }
-    else
-    {
-        if (programIndex + moveLength > programPath.GetLength(0)) return true;
-        else return false;
+        Ins(0, 0, $"{dice[0]} {dice[1]} {dice[2]} {dice[3]}");
     }
 }
 
@@ -111,23 +108,27 @@ void CheckGameOver(bool isPlayer)
     }
 }
 
-void Move(bool isPlayer)
+bool SkipMove(bool isPlayer)
 {
-    if (isPlayer)
+    if(isPlayer)
     {
-        if (playerIndex != 0) IPlayer(s);
-        else IPlayer(" ");
+        if (playerIndex + moveLength > playerPath.GetLength(0)) 
+        {
+            msg += "Вы пропускаете ход. ";
 
-        playerIndex += moveLength;
-        IPlayer(playerPiece);
+            return true;
+        }
+        else return false;
     }
     else
     {
-        if (programIndex != 0) IProgram(s);
-        else IProgram(" ");
+        if (programIndex + moveLength > programPath.GetLength(0)) 
+        {
+            msg += "Программа пропускает ход. ";
 
-        programIndex += moveLength;
-        IProgram(programPiece);
+            return true;
+        }
+        else return false;
     }
 }
 
@@ -135,27 +136,94 @@ void SendBack(bool isPlayer)
 {
     if (isPlayer)
     {
-        if (programIndex >= 5 && programIndex <= 12)
+        if (programIndex >= 5 && programIndex <= 12 && playerIndex + moveLength == programIndex)
         {
-            if (playerIndex + moveLength == programIndex)
+            if (programIndex == safeSquare)
             {
-                IProgram(s);
-                programIndex = 0;
-                IProgram(programPiece);
+                msg += "Фишка противника на безопасной клетке и не может быть убрана. Ваша фишка перепрыгнула фишку противника. ";
+                moveLength++;
+            }
+            else
+            {
+                ClearLine(8);
+                Ins(0, 8, "Убрать фишку противника или перепрыгнуть? Backspace - убрать, Enter - перепрыгнуть. ");
+
+                var key = Console.ReadKey().Key;
+                if (key == ConsoleKey.Backspace)
+                {
+                    InsProgram(square);
+                    programIndex = 0;
+                    InsProgram(programPiece);
+
+                    msg += "Вы убрали фишку противника с доски. ";
+                }
+                else if (key == ConsoleKey.Enter)
+                {
+                    moveLength++;
+
+                    msg += "Ваша фишка перепрыгнула фишку противника. ";
+                }
+                else ClearLine(9);
+                
             }
         }
     }
     else
     {
-        if (playerIndex >= 5 && playerIndex <= 12)
+        if (playerIndex >= 5 && playerIndex <= 12 && programIndex + moveLength == playerIndex)
         {
-            if (programIndex + moveLength == playerIndex)
+            if (playerIndex == safeSquare)
             {
-                IPlayer(s);
-                playerIndex = 0;
-                IPlayer(playerPiece);
+                msg += "Ваша фишка на безопасной клетке и не может быть убрана. Фишка противника перепрыгнула вашу фишку. ";
+            }
+            else
+            {
+                if (new Random().Next(2) == 1)
+                {
+                    InsPlayer(square);
+                    playerIndex = 0;
+                    InsPlayer(playerPiece);
+                    msg += "Противник убрал вашу фишку с доски. ";
+                }
+                else
+                {
+                    moveLength++;
+                    msg += "Фишка противника перепрыгнула вашу фишку. ";
+                }
+                
             }
         }
+    }
+}
+
+string Decline()
+{
+    if (moveLength >= 5) return "клеток";
+    else if (moveLength == 1) return "клетку";
+    else return "клетки";
+}
+
+void Move(bool isPlayer)
+{
+    if (isPlayer)
+    {
+        if (playerIndex != 0) InsPlayer(square);
+        else InsPlayer(" ");
+
+        playerIndex += moveLength;
+        InsPlayer(playerPiece);
+
+        msg += $"Вы продвинулись вперёд на {moveLength} {Decline()}. ";
+    }
+    else
+    {
+        if (programIndex != 0) InsProgram(square);
+        else InsProgram(" ");
+
+        programIndex += moveLength;
+        InsProgram(programPiece);
+
+        msg += $"Программа продвинулась вперёд на {moveLength} {Decline()}. ";
     }
 }
 
@@ -163,44 +231,60 @@ void GameOver(bool isPlayer)
 {
     if (isPlayer)
     {
-        IPlayer(s);
-        I(0, 8, "ВЫ ВЫИГРАЛИ!");
+        InsPlayer(square);
+        msg += "ВЫ ВЫИГРАЛИ! ";
     }
     else
     {
-        IProgram(s);
-        I(0, 8, "Вы проиграли.");
+        InsProgram(square);
+        msg += "Вы проиграли. ";
     }
+}
+
+bool ExtraRoll(bool isPlayer)
+{
+    int currentIndex;
+    if (isPlayer) currentIndex = playerIndex;
+    else currentIndex = programIndex;
+
+    for (int i = 0; i < extraRollSquare.Length; i++)
+    {
+        if (currentIndex == extraRollSquare[i])
+        {
+            if (isPlayer) msg += "У вас есть дополнительный ход. ";
+            else msg += "У программы есть дополнительный ход. ";
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //go!
 while (!gameOver)
 {
-    Console.SetCursorPosition(0, 8);
+    msg = "";
+
+    Console.SetCursorPosition(0,9);
 
     var key = Console.ReadKey().Key;
-
     if (key == ConsoleKey.Enter)
     {
-        if (playerTurn)
-        {
-            CastDice(true);
-            CheckGameOver(true);
-            SendBack(true);
+        CastDice(playerTurn);
+        CheckGameOver(playerTurn);
+        SendBack(playerTurn);
+        bool skip = SkipMove(playerTurn);
 
-            if (!gameOver && !SkipMove(true)) Move(true);
-            else if (gameOver) GameOver(true);
-        }
-        else
-        {
-            CastDice(false);
-            CheckGameOver(false);
-            SendBack(false);
+        if (!gameOver && !skip) Move(playerTurn);
+        else if (gameOver) GameOver(playerTurn);
 
-            if (!gameOver && !SkipMove(false)) Move(false);
-            else if (gameOver) GameOver(false);
-        }
+        bool extra;
+        if (skip || gameOver) extra = false;
+        else extra = ExtraRoll(playerTurn);
+        if (!extra) playerTurn = !playerTurn;
 
-        playerTurn = !playerTurn;
+        ClearLine(8);
+        Ins(0, 8, msg);
     }
+    else if (key == ConsoleKey.Escape) break;
 }
